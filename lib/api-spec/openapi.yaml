@@ -1,0 +1,490 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: simulation
+    description: Financial semester simulation
+  - name: opportunities
+    description: Verified support and paid-opportunity matching
+  - name: auth
+    description: CampusOne account and saved-profile operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /simulate:
+    post:
+      operationId: simulateSemester
+      tags: [simulation]
+      summary: Simulate a student's semester
+      description: Calculates a month-by-month financial forecast from academic and financial inputs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemesterSimulationInput"
+      responses:
+        "200":
+          description: Financial semester forecast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemesterSimulationResult"
+        "400":
+          description: Invalid simulation inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /optimize:
+    post:
+      operationId: optimizeSemester
+      tags: [simulation]
+      summary: Find transparent ways to stabilize a semester
+      description: Evaluates bounded, deterministic what-if profiles using the semester simulation engine.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemesterSimulationInput"
+      responses:
+        "200":
+          description: Ranked optimization recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemesterOptimizationResult"
+        "400":
+          description: Invalid optimization inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /opportunities/match:
+    post:
+      operationId: matchOpportunities
+      tags: [opportunities]
+      summary: Match a semester plan with support opportunities
+      description: Returns active, recently verified sourced opportunities whose published amounts could contribute to the plan's exact tuition-support or monthly-income targets. Expired, inactive, not-yet-open, and stale source records are excluded. Matching does not determine eligibility or awards.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpportunityMatchInput"
+      responses:
+        "200":
+          description: Ranked opportunity matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityMatchResult"
+        "400":
+          description: Invalid opportunity targets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Create a CampusOne account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpInput"
+      responses:
+        "201":
+          description: Account created and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+        "400":
+          description: Invalid account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in to CampusOne
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: End the current CampusOne session
+      responses:
+        "204":
+          description: Signed out
+  /auth/session:
+    get:
+      operationId: getAuthSession
+      tags: [auth]
+      summary: Load the current account and saved profile
+      responses:
+        "200":
+          description: Current authentication state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthState"
+  /profile:
+    put:
+      operationId: saveStudentProfile
+      tags: [auth]
+      summary: Save the signed-in student's permanent profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemesterSimulationInput"
+      responses:
+        "200":
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemesterSimulationInput"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    TuitionPayment:
+      type: object
+      properties:
+        month:
+          type: integer
+          minimum: 1
+        amount:
+          type: number
+          minimum: 0
+      required:
+        - month
+        - amount
+    SemesterSimulationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        major:
+          type: string
+          minLength: 1
+        creditHours:
+          type: integer
+          minimum: 1
+        costPerCredit:
+          type: number
+          minimum: 0
+        semesterDuration:
+          type: integer
+          minimum: 1
+          maximum: 12
+        currentBalance:
+          type: number
+        monthlyIncome:
+          type: number
+          minimum: 0
+        transportation:
+          type: number
+          minimum: 0
+        food:
+          type: number
+          minimum: 0
+        otherExpenses:
+          type: number
+          minimum: 0
+        tuitionPayments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TuitionPayment"
+      required:
+        - name
+        - major
+        - creditHours
+        - costPerCredit
+        - semesterDuration
+        - currentBalance
+        - monthlyIncome
+        - transportation
+        - food
+        - otherExpenses
+        - tuitionPayments
+    MonthlyForecast:
+      type: object
+      properties:
+        month:
+          type: integer
+        label:
+          type: string
+        startingBalance:
+          type: number
+        income:
+          type: number
+        tuition:
+          type: number
+        food:
+          type: number
+        transportation:
+          type: number
+        otherExpenses:
+          type: number
+        totalExpenses:
+          type: number
+        endingBalance:
+          type: number
+        isAtRisk:
+          type: boolean
+      required:
+        - month
+        - label
+        - startingBalance
+        - income
+        - tuition
+        - food
+        - transportation
+        - otherExpenses
+        - totalExpenses
+        - endingBalance
+        - isAtRisk
+    SemesterSimulationResult:
+      type: object
+      properties:
+        profile:
+          $ref: "#/components/schemas/SemesterSimulationInput"
+        tuition:
+          type: number
+        monthlyBalances:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyForecast"
+        finalProjectedBalance:
+          type: number
+        firstRiskMonth:
+          type: ["integer", "null"]
+        financialHealthScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        totalIncome:
+          type: number
+        totalExpenses:
+          type: number
+        totalTuition:
+          type: number
+        lowestProjectedBalance:
+          type: number
+      required:
+        - profile
+        - tuition
+        - monthlyBalances
+        - finalProjectedBalance
+        - firstRiskMonth
+        - financialHealthScore
+        - totalIncome
+        - totalExpenses
+        - totalTuition
+        - lowestProjectedBalance
+    OptimizerChanges:
+      type: object
+      properties:
+        livingSpendReductionPercent: { type: number, minimum: 0, maximum: 20 }
+        monthlyIncomeAddition: { type: number, minimum: 0 }
+        tuitionPaymentShiftMonths: { type: integer, minimum: 0, maximum: 1 }
+        supportPercent: { type: number, minimum: 0, maximum: 15 }
+        creditHoursReduction: { type: integer, minimum: 0, maximum: 3 }
+      required:
+        - livingSpendReductionPercent
+        - monthlyIncomeAddition
+        - tuitionPaymentShiftMonths
+        - supportPercent
+        - creditHoursReduction
+    OptimizerCandidate:
+      type: object
+      properties:
+        profile: { $ref: "#/components/schemas/SemesterSimulationInput" }
+        result: { $ref: "#/components/schemas/SemesterSimulationResult" }
+        changes: { $ref: "#/components/schemas/OptimizerChanges" }
+        targets: { $ref: "#/components/schemas/OpportunityTargets" }
+        stabilized: { type: boolean }
+        gap: { type: number, minimum: 0 }
+      required: [profile, result, changes, targets, stabilized, gap]
+    OpportunityTargets:
+      type: object
+      properties:
+        tuitionSupportAmount: { type: number, minimum: 0 }
+        monthlyIncomeAmount: { type: number, minimum: 0 }
+        semesterIncomeAmount: { type: number, minimum: 0 }
+        currentGap: { type: number, minimum: 0 }
+      required: [tuitionSupportAmount, monthlyIncomeAmount, semesterIncomeAmount, currentGap]
+    OptimizerIntervention:
+      type: object
+      properties:
+        kind: { type: string }
+        label: { type: string }
+        changes: { $ref: "#/components/schemas/OptimizerChanges" }
+        isolatedResult: { $ref: "#/components/schemas/SemesterSimulationResult" }
+        gapReduction: { type: number }
+        scoreChange: { type: number }
+        stabilized: { type: boolean }
+        whyThisHelps: { type: string }
+      required: [kind, label, changes, isolatedResult, gapReduction, scoreChange, stabilized, whyThisHelps]
+    SemesterOptimizationResult:
+      type: object
+      properties:
+        baseline: { $ref: "#/components/schemas/SemesterSimulationResult" }
+        recommendation: { $ref: "#/components/schemas/OptimizerCandidate" }
+        alternatives:
+          type: array
+          items: { $ref: "#/components/schemas/OptimizerCandidate" }
+        interventions:
+          type: array
+          items: { $ref: "#/components/schemas/OptimizerIntervention" }
+        evaluatedCandidates: { type: integer, minimum: 1 }
+        stabilized: { type: boolean }
+        gapReduced: { type: boolean }
+        policy: { type: string }
+      required: [baseline, recommendation, alternatives, interventions, evaluatedCandidates, stabilized, gapReduced, policy]
+    OpportunityMatchInput:
+      type: object
+      properties:
+        tuitionSupportAmount: { type: number, minimum: 0 }
+        monthlyIncomeAmount: { type: number, minimum: 0 }
+        semesterIncomeAmount: { type: number, minimum: 0 }
+        currentGap: { type: number, minimum: 0 }
+        semesterDuration: { type: integer, minimum: 1, maximum: 12 }
+        major: { type: string, minLength: 1 }
+      required: [tuitionSupportAmount, monthlyIncomeAmount, semesterIncomeAmount, currentGap, semesterDuration, major]
+    Opportunity:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        provider: { type: string }
+        sourceUrl: { type: string, format: uri }
+        type: { type: string, enum: [scholarship, aid, paid-opportunity] }
+        amount: { type: string }
+        estimatedAmount: { type: ["number", "null"], minimum: 0 }
+        deadline: { type: string }
+        requirements:
+          type: array
+          items: { type: string }
+        verificationStatus: { type: string, enum: [verified-source] }
+        verifiedAt: { type: string, format: date }
+        impactExplanation: { type: string }
+        relevanceExplanation: { type: string }
+        eligibilityNotice: { type: string }
+      required: [id, name, provider, sourceUrl, type, amount, estimatedAmount, deadline, requirements, verificationStatus, verifiedAt, impactExplanation, relevanceExplanation, eligibilityNotice]
+    OpportunityMatchResult:
+      type: object
+      properties:
+        targets: { $ref: "#/components/schemas/OpportunityTargets" }
+        opportunities:
+          type: array
+          items: { $ref: "#/components/schemas/Opportunity" }
+        disclaimer: { type: string }
+      required: [targets, opportunities, disclaimer]
+    AccountUser:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+      required: [id, name, email]
+    AuthState:
+      type: object
+      properties:
+        authenticated: { type: boolean }
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AccountUser"
+            - type: "null"
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/SemesterSimulationInput"
+            - type: "null"
+      required: [authenticated, user, profile]
+    SignUpInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+      required: [name, email, password]
+    LoginInput:
+      type: object
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+      required: [email, password]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+

@@ -1,0 +1,76 @@
+# ============================================================
+# CampusOne — .gitignore
+# ============================================================
+
+# ── Compiled / build output ──────────────────────────────────
+dist/
+build/
+out-tsc/
+tmp/
+*.tsbuildinfo
+.expo/
+.expo-shared/
+
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+
+# ── Environment / secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Database ──────────────────────────────────────────────────
+*.sqlite
+*.db
+*.sqlite3
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log
+
+# ── Test outputs ─────────────────────────────────────────────
+coverage/
+/artifacts/*/test-results/
+/artifacts/*/playwright-report/
+test-results/
+playwright-report/
+
+# ── IDE / editor ─────────────────────────────────────────────
+/.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Replit / platform ────────────────────────────────────────
+.cache/
+.local/
+.config/
+.replit
+.replitignore
+replit.md
+replit.nix
+.cursor/
+
+# ── Hackathon dev artefacts (Replit agent prompts / history) ─
+attached_assets/
+.conversation/
+.agents/
+
+# ── Misc ─────────────────────────────────────────────────────
+/.sass-cache/
+/connect.lock
+/typings
